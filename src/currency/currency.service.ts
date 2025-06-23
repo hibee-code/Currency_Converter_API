@@ -1,4 +1,5 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -8,17 +9,22 @@ import { CurrencyGateway } from '../websocket/currency.gateway';
 import { ConvertCurrencyDto } from './dto/convert-currency.dto';
 import axios from 'axios';
 import * as cron from 'node-cron';
+import { ConfigService } from '@nestjs/config';
+import * as NodeCache from 'node-cache';
 
 @Injectable()
 export class CurrencyService {
   private readonly logger = new Logger(CurrencyService.name);
   private exchangeRates: any = {};
+  private cache = new NodeCache({ stdTTL: 600 }); // 10 min cache
 
   constructor(
     @InjectRepository(ConversionHistory)
     private conversionHistoryRepository: Repository<ConversionHistory>,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private currencyGateway: CurrencyGateway,
+    private httpService: HttpService,
+    private configService: ConfigService,
   ) {
     this.initializeExchangeRates();
     this.scheduleRateUpdates();
@@ -101,7 +107,7 @@ export class CurrencyService {
     if (userId) {
       const history = this.conversionHistoryRepository.create({
         ...result,
-        userId,
+        user: { id: userId },
       });
       await this.conversionHistoryRepository.save(history);
     }
@@ -113,8 +119,8 @@ export class CurrencyService {
     const skip = (page - 1) * limit;
     
     const [history, total] = await this.conversionHistoryRepository.findAndCount({
-      where: { userId },
-      order: { createdAt: 'DESC' },
+      where: { user: { id: userId } },
+      order: { date: 'DESC' },
       skip,
       take: limit,
     });
@@ -155,5 +161,24 @@ export class CurrencyService {
       rates: this.exchangeRates,
       timestamp: new Date(),
     };
+  }
+
+  async getRate(from: string, to: string): Promise<number> {
+    const cacheKey = `${from}_${to}`;
+    const cached = this.cache.get(cacheKey);
+    if (cached) return cached as number;
+
+    const apiKey = this.configService.get('CURRENCY_API_KEY');
+    const url = `${this.configService.get('CURRENCY_API_URL')}/convert?from=${from}&to=${to}&amount=1`;
+
+    const response = await this.httpService.get(url, {
+      headers: { apikey: apiKey },
+    }).toPromise();
+    if (!response) throw new Error('No response from currency API');
+    const { data } = response;
+
+    const rate = data.result;
+    this.cache.set(cacheKey, rate);
+    return rate;
   }
 } 

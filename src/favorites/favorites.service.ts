@@ -10,41 +10,26 @@ export class FavoritesService {
     private favoritePairRepository: Repository<FavoritePair>,
   ) {}
 
-  async addFavoritePair(userId: number, fromCurrency: string, toCurrency: string) {
-    const existing = await this.favoritePairRepository.findOne({
-      where: { userId, fromCurrency, toCurrency },
-    });
-
-    if (existing) {
-      throw new Error('Favorite pair already exists');
-    }
-
+  async addFavorite(userId: number, fromCurrency: string, toCurrency: string) {
     const favorite = this.favoritePairRepository.create({
-      userId,
+      user: { id: userId },
       fromCurrency,
       toCurrency,
     });
-
     return this.favoritePairRepository.save(favorite);
   }
 
-  async getFavoritePairs(userId: number) {
+  async getFavorites(userId: number) {
     return this.favoritePairRepository.find({
-      where: { userId },
-      order: { createdAt: 'DESC' },
+      where: { user: { id: userId } },
     });
   }
 
   async removeFavoritePair(userId: number, fromCurrency: string, toCurrency: string) {
-    const favorite = await this.favoritePairRepository.findOne({
-      where: { userId, fromCurrency, toCurrency },
+    return this.favoritePairRepository.delete({
+      user: { id: userId },
+      fromCurrency,
+      toCurrency,
     });
-
-    if (!favorite) {
-      throw new Error('Favorite pair not found');
-    }
-
-    await this.favoritePairRepository.remove(favorite);
-    return { message: 'Favorite pair removed successfully' };
   }
 } 
