@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { FavoritePair } from '../favorites/favorite-pair.entity';
 import { Alert } from '../alerts/alert.entity';
+import * as qrcode from 'qrcode';
 
 @Entity()
 export class User {
@@ -24,6 +25,18 @@ export class User {
 
   @Column({ nullable: true })
   twoFactorSecret: string;
+
+  @Column({ nullable: true })
+  passwordResetToken: string;
+
+  @Column({ nullable: true })
+  emailVerificationToken: string;
+
+  @Column({ default: false })
+  isEmailVerified: boolean;
+
+  @Column({ default: false })
+  is2FAEnabled: boolean;
 
   @CreateDateColumn()
   createdAt: Date;
