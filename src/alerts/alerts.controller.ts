@@ -1,6 +1,7 @@
-import { Controller, Post, Get, Body, Req, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Body, Req, UseGuards, UnauthorizedException } from '@nestjs/common';
 import { AlertsService } from './alerts.service';
 import { AuthGuard } from '@nestjs/passport';
+import { Request as ExpressRequest } from 'express';
 
 @Controller('alerts')
 export class AlertsController {
@@ -8,13 +9,15 @@ export class AlertsController {
 
   @UseGuards(AuthGuard('jwt'))
   @Post()
-  async addAlert(@Body() body: { fromCurrency: string; toCurrency: string; targetRate: number }, @Req() req) {
+  async addAlert(@Body() body: { fromCurrency: string; toCurrency: string; targetRate: number }, @Req() req: ExpressRequest) {
+    if (!req.user) throw new UnauthorizedException();
     return this.alertsService.addAlert(req.user.id, body.fromCurrency, body.toCurrency, body.targetRate);
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Get()
-  async getAlerts(@Req() req) {
+  async getAlerts(@Req() req: ExpressRequest) {
+    if (!req.user) throw new UnauthorizedException();
     return this.alertsService.getAlerts(req.user.id);
   }
 } 

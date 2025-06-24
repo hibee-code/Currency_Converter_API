@@ -17,6 +17,7 @@ import { CurrencyService } from './currency.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ConvertCurrencyDto } from './dto/convert-currency.dto';
 import { Request as ExpressRequest } from 'express';
+import axios from 'axios';
 
 @Controller('currency')
 @UseGuards(ThrottlerGuard)
@@ -78,6 +79,9 @@ export class CurrencyController {
 
   @Get('historical')
   async historical(@Query('from') from: string, @Query('to') to: string, @Query('start') start: string, @Query('end') end: string) {
-    return { message: 'Historical data endpoint' };
+    // Use exchangerate.host for historical rates
+    const url = `https://api.exchangerate.host/timeseries?start_date=${start}&end_date=${end}&base=${from}&symbols=${to}`;
+    const { data } = await axios.get(url);
+    return data;
   }
 } 

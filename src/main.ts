@@ -4,6 +4,8 @@ import { AppModule } from './app.module';
 import helmet from 'helmet';
 import * as compression from 'compression';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { HttpExceptionFilter } from './common/http-exception.filter';
+import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -25,6 +27,9 @@ async function bootstrap() {
     credentials: true,
   });
 
+  app.useGlobalFilters(new HttpExceptionFilter());
+  const logger = new Logger('Bootstrap');
+
   const config = new DocumentBuilder()
     .setTitle('Currency Converter API')
     .setDescription('API for real-time currency conversion')
@@ -36,6 +41,6 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
-  console.log(`Application is running on: http://localhost:${port}`);
+  logger.log(`Application is running on: http://localhost:${port}`);
 }
 bootstrap();
