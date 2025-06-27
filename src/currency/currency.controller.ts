@@ -24,6 +24,8 @@ import axios from 'axios';
 export class CurrencyController {
   constructor(private readonly currencyService: CurrencyService) {}
 
+  private historicalCache = new Map<string, { data: any, timestamp: number }>();
+
   @Post('convert')
   @HttpCode(HttpStatus.OK)
   async convertCurrency(
@@ -79,9 +81,15 @@ export class CurrencyController {
 
   @Get('historical')
   async historical(@Query('from') from: string, @Query('to') to: string, @Query('start') start: string, @Query('end') end: string) {
-    // Use exchangerate.host for historical rates
+    const cacheKey = `${from}_${to}_${start}_${end}`;
+    const now = Date.now();
+    const cached = this.historicalCache.get(cacheKey);
+    if (cached && now - cached.timestamp < 1000 * 60 * 30) { // 30 min cache
+      return cached.data;
+    }
     const url = `https://api.exchangerate.host/timeseries?start_date=${start}&end_date=${end}&base=${from}&symbols=${to}`;
     const { data } = await axios.get(url);
+    this.historicalCache.set(cacheKey, { data, timestamp: now });
     return data;
   }
 } 
