@@ -7,7 +7,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { CurrencyService } from '../currency/currency.service';
-import { UseGuards } from '@nestjs/common';
+import { forwardRef, Inject, UseGuards } from '@nestjs/common';
 import { WsJwtGuard } from '../auth/ws-jwt.guard';
 
 @WebSocketGateway({
@@ -21,7 +21,10 @@ export class CurrencyGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   private connectedClients = new Map<string, Socket>();
 
-  constructor(private readonly currencyService: CurrencyService) {}
+  constructor(
+    @Inject(forwardRef(() => CurrencyService))
+    private readonly currencyService: CurrencyService
+  ) {}
 
   async handleConnection(client: Socket) {
     this.connectedClients.set(client.id, client);

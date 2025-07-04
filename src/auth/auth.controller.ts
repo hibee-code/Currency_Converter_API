@@ -15,7 +15,7 @@ export class AuthController {
   @ApiOperation({ summary: 'User login' })
   @ApiResponse({ status: 200, description: 'JWT access token returned.' })
   @UseGuards(ThrottlerGuard)
-  @Throttle({ limit: 5, ttl: 60 }) // 5 requests per minute
+  @Throttle({ default: { limit: 5, ttl: 60 } })
   @Post('login')
   async login(@Body() body: { email: string; password: string; code?: string }) {
     const user = await this.authService.validateUser(body.email, body.password);
@@ -33,7 +33,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Request password reset email' })
   @ApiResponse({ status: 201, description: 'Password reset email sent.' })
   @UseGuards(ThrottlerGuard)
-  @Throttle({ limit: 3, ttl: 60 }) // 3 requests per minute
+  @Throttle({ default: { limit: 3, ttl: 60 } })
   @Post('forgot-password')
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.sendPasswordResetEmail(dto.email);
@@ -76,7 +76,7 @@ export class AuthController {
   @ApiOperation({ summary: 'User signup' })
   @ApiResponse({ status: 201, description: 'User registered.' })
   @UseGuards(ThrottlerGuard)
-  @Throttle({ limit: 3, ttl: 60 }) // 3 requests per minute
+  @Throttle({ default: { limit: 3, ttl: 60 } })
   @Post('signup')
   async signup(@Body() createUserDto: any) {
     // You may want to move signup here for rate limiting, or add similar logic to UsersController
