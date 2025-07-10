@@ -13,7 +13,7 @@ import { ConversionHistory } from './currency/conversion-history.entity';
 import { FavoritePair } from './favorites/favorite-pair.entity';
 import { Alert } from './alerts/alert.entity';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { CacheModule } from '@nestjs/cache-manager';
+import { redisConfig } from './config/redis/redis.config';
 import { dataSourceOptions } from './config/database/data-source';
 
 @Module({
@@ -21,7 +21,7 @@ import { dataSourceOptions } from './config/database/data-source';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    CacheModule.register({ isGlobal: true }),
+    redisConfig,
 
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],

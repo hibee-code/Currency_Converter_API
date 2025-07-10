@@ -10,13 +10,11 @@ import { ConvertCurrencyDto } from './dto/convert-currency.dto';
 import axios from 'axios';
 import * as cron from 'node-cron';
 import { ConfigService } from '@nestjs/config';
-import * as NodeCache from 'node-cache';
 
 @Injectable()
 export class CurrencyService {
   private readonly logger = new Logger(CurrencyService.name);
   private exchangeRates: any = {};
-  private cache = new NodeCache({ stdTTL: 600 }); // 10 min cache
 
   constructor(
     @InjectRepository(ConversionHistory)
@@ -165,8 +163,8 @@ export class CurrencyService {
 
   async getRate(from: string, to: string): Promise<number> {
     const cacheKey = `${from}_${to}`;
-    const cached = this.cache.get(cacheKey);
-    if (cached) return cached as number;
+    const cached = await this.cacheManager.get<number>(cacheKey);
+    if (cached) return cached;
 
     const apiKey = this.configService.get('CURRENCY_API_KEY');
     const url = `${this.configService.get('CURRENCY_API_URL')}/convert?from=${from}&to=${to}&amount=1`;
@@ -178,7 +176,7 @@ export class CurrencyService {
     const { data } = response;
 
     const rate = data.result;
-    this.cache.set(cacheKey, rate);
+    await this.cacheManager.set(cacheKey, rate, 300); // cache for 5 minutes
     return rate;
   }
 } 
