@@ -12,29 +12,45 @@ import { User } from './users/user.entity';
 import { ConversionHistory } from './currency/conversion-history.entity';
 import { FavoritePair } from './favorites/favorite-pair.entity';
 import { Alert } from './alerts/alert.entity';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule, ThrottlerModuleOptions } from '@nestjs/throttler';
 import { redisConfig } from './config/redis/redis.config';
 import { dataSourceOptions } from './config/database/data-source';
+import { CacheModule } from '@nestjs/cache-manager';
+import { redisStore } from 'cache-manager-redis-store';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
-    redisConfig,
 
-    ThrottlerModule.forRootAsync({
+    ConfigModule.forRoot({ isGlobal: true }),
+
+    CacheModule.registerAsync({
+      isGlobal: true,
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => [
-        {
-          ttl: Number(config.get('THROTTLE_TTL') ?? 60),
-          limit: Number(config.get('THROTTLE_LIMIT') ?? 10),
-        },
-      ],
+      useFactory: async (config: ConfigService) => {
+        const store = await redisStore({
+          url: `redis://${config.get('REDIS_HOST')}:${config.get('REDIS_PORT')}`,
+        });
+    
+        return {
+          store, // ✅ use the resolved store directly
+          ttl: 60,
+        };
+      },
     }),
+ThrottlerModule.forRootAsync({
+  imports: [ConfigModule],
+  inject: [ConfigService],
+  useFactory: (config: ConfigService) => [
+    {
+      ttl: Number(config.get('THROTTLE_TTL') ?? 60),
+      limit: Number(config.get('THROTTLE_LIMIT') ?? 10),
+    },
+  ],
+}),
 
     TypeOrmModule.forRoot(dataSourceOptions),
+
     UsersModule,
     AuthModule,
     CurrencyModule,

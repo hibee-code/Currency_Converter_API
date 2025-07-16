@@ -61,6 +61,27 @@ export class CurrencyService {
       this.exchangeRates = await this.cacheManager.get('exchange_rates') || this.getFallbackRates();
     }
   }
+  // async updateExchangeRates() {
+  //   try {
+  //     const response = await axios.get('https://api.exchangerate-api.com/v4/latest/USD');
+  //     this.exchangeRates = response.data.rates;
+  
+  //     // ✅ Use proper TTL object
+  //     await this.cacheManager.set('exchange_rates', this.exchangeRates, 300);
+  
+  //     // Optional: broadcast to clients
+  //     await this.currencyGateway.broadcastRateUpdate({
+  //       timestamp: new Date(),
+  //       rates: this.exchangeRates,
+  //     });
+  
+  //     this.logger.log('Exchange rates updated and cached');
+  //   } catch (error) {
+  //     this.logger.error('Failed to fetch rates, falling back to cache', error);
+  //     const fallback = await this.cacheManager.get('exchange_rates');
+  //     this.exchangeRates = fallback || this.getFallbackRates();
+  //   }
+  // }
 
   private getFallbackRates() {
     return {
